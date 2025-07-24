@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "10 পাকের একটি আদর্শ সলিনয়েডের আবেশের পরিমাণ 3.5 mH। সলিনয়েডের মধ্যে 2 A বিদ্যুৎ প্রবাহিত হলে, প্রতি পাকের জন্য চৌম্বক ফ্লাক্স হবে-",
+          options: {
+            a: "0 Wb",
+            b: "3.5 × 10⁻⁴ Wb",
+            c: "7.0 × 10⁻⁴ Wb",
+            d: "7.0 × 10⁻³ Wb",
+          },
+          correct: "c",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশের সূত্রানুযায়ী:<br>L = (NΦ) / I<br>যেখানে,<br>L = স্বকীয় আবেশ গুণাঙ্ক = 3.5 mH = 3.5 × 10⁻³ H<br>N = পাক সংখ্যা = 10<br>Φ = প্রতি পাকের চৌম্বক ফ্লাক্স<br>I = তড়িৎ প্রবাহ = 2 A<br><br>এখন, মোট চৌম্বক ফ্লাক্স (NΦ) = LI<br>=> NΦ = (3.5 × 10⁻³ H) × (2 A)<br>=> NΦ = 7.0 × 10⁻³ Wb<br><br>প্রতি পাকের জন্য চৌম্বক ফ্লাক্স (Φ) = (মোট চৌম্বক ফ্লাক্স) / (পাক সংখ্যা)<br>=> Φ = (7.0 × 10⁻³ Wb) / 10<br>=> Φ = 7.0 × 10⁻⁴ Wb",
+        },
+        {
+          id: 2,
+          question:
+            "একটি কুণ্ডলীর পাক সংখ্যা 100 এবং কুণ্ডলীর সঙ্গে জড়িত চৌম্বক ফ্লাক্স 0.8 × 10⁻² Wb/sec হারে পরিবর্তিত হলে কুণ্ডলীতে আবিষ্ট তড়িচ্চালক বল কত?",
+          options: {
+            a: "0.8 V",
+            b: "0.8 × 10⁻² V",
+            c: "0.4 V",
+            d: "0 V",
+          },
+          correct: "a",
+          explanation:
+            "আমরা জানি, ফ্যারাডের তড়িৎচৌম্বক আবেশের সূত্রানুযায়ী:<br>ε = -N (dΦ/dt)<br>যেখানে,<br>ε = আবিষ্ট তড়িচ্চালক বল<br>N = পাক সংখ্যা = 100<br>dΦ/dt = চৌম্বক ফ্লাক্স পরিবর্তনের হার = 0.8 × 10⁻² Wb/sec<br><br>এখন, মান বসিয়ে পাই:<br>ε = -100 × (0.8 × 10⁻²)<br>ε = -0.8 V<br><br>আবিষ্ট তড়িচ্চালক বলের মান হবে 0.8 V।",
+        },
+        {
+          id: 3,
+          question:
+            "কুণ্ডলীতে যদি 300 পাক থাকে তবে 0.05 সেকেন্ডে 50 × 10⁻⁴ ওয়েবার ফ্লাক্স পরিবর্তন করা হলে কুণ্ডলীতে কত তড়িচ্চালক বল আবিষ্ট হবে?",
+          options: {
+            a: "360 V",
+            b: "300 V",
+            c: "100 V",
+            d: "30 V",
+          },
+          correct: "d",
+          explanation:
+            "আমরা জানি, ফ্যারাডের তড়িৎচৌম্বক আবেশের সূত্রানুযায়ী:<br>ε = -N (ΔΦ/Δt)<br>যেখানে,<br>ε = আবিষ্ট তড়িচ্চালক বল<br>N = পাক সংখ্যা = 300<br>ΔΦ = চৌম্বক ফ্লাক্সের পরিবর্তন = 50 × 10⁻⁴ Wb<br>Δt = সময় = 0.05 সেকেন্ড<br><br>এখন, মান বসিয়ে পাই:<br>ε = -300 × (50 × 10⁻⁴ Wb) / (0.05 s)<br>ε = -300 × (0.005 Wb) / (0.05 s)<br>ε = -300 × 0.1 V<br>ε = -30 V<br><br>আবিষ্ট তড়িচ্চালক বলের মান হবে 30 V।",
+        },
+        {
+          id: 4,
+          question:
+            "4 × 10⁻⁵ T এর একটি চৌম্বকক্ষেত্রের সাথে 0.4 m² ক্ষেত্রের একটি তল 30° কোণ উৎপন্ন করে। তলের মধ্য দিয়ে অতিক্রান্ত চৌম্বক ফ্লাক্স কত?",
+          options: {
+            a: "4 × 10⁻⁶ Wb",
+            b: "6 × 10⁻⁶ Wb",
+            c: "8 × 10⁻⁶ Wb",
+            d: "10 × 10⁻⁶ Wb",
+          },
+          correct: "c",
+          explanation:
+            "আমরা জানি, চৌম্বক ফ্লাক্সের গাণিতিক রূপ:<br>Φ = BA cos θ<br>যেখানে,<br>B = চৌম্বক ক্ষেত্রের প্রাবল্য = 4 × 10⁻⁵ T<br>A = তলের ক্ষেত্রফল = 0.4 m²<br>θ = চৌম্বক ক্ষেত্র এবং ক্ষেত্রফল ভেক্টরের মধ্যবর্তী কোণ।<br><br>এখানে, তলটি চৌম্বকক্ষেত্রের সাথে 30° কোণ উৎপন্ন করে। ক্ষেত্রফল ভেক্টর সবসময় তলের লম্ব বরাবর হয়।<br>সুতরাং, চৌম্বক ক্ষেত্র এবং ক্ষেত্রফল ভেক্টরের মধ্যবর্তী কোণ হবে θ = 90° - 30° = 60°।<br><br>এখন, মান বসিয়ে পাই:<br>Φ = (4 × 10⁻⁵ T) × (0.4 m²) × cos(60°)<br>Φ = (1.6 × 10⁻⁵) × 0.5<br>Φ = 0.8 × 10⁻⁵ Wb<br>Φ = 8 × 10⁻⁶ Wb",
+        },
+        {
+          id: 5,
+          question:
+            "দুটি কুণ্ডলীর পারস্পরিক আবেশ গুণাঙ্ক 2 H। একটি কুণ্ডলীতে প্রবাহমাত্রা 0.1 sec-এ 10 A থেকে শূন্য হলে অন্য কুণ্ডলীতে কত তড়িচ্চালক বল আবিষ্ট হবে?",
+          options: {
+            a: "2 V",
+            b: "20 V",
+            c: "0.2 V",
+            d: "200 V",
+          },
+          correct: "d",
+          explanation:
+            "আমরা জানি, পারস্পরিক আবেশের ফলে আবিষ্ট তড়িচ্চালক বলের সূত্রানুযায়ী:<br>ε = -M (ΔI/Δt)<br>যেখানে,<br>ε = আবিষ্ট তড়িচ্চালক বল<br>M = পারস্পরিক আবেশ গুণাঙ্ক = 2 H<br>ΔI = প্রবাহমাত্রার পরিবর্তন = (0 A - 10 A) = -10 A<br>Δt = সময় = 0.1 sec<br><br>এখন, মান বসিয়ে পাই:<br>ε = -2 H × (-10 A) / (0.1 s)<br>ε = -2 × (-100) V<br>ε = 200 V<br><br>সুতরাং, অন্য কুণ্ডলীতে 200 V তড়িচ্চালক বল আবিষ্ট হবে।",
+        },
+        {
+          id: 6,
+          question:
+            "একটি স্টেপ-আপ ট্রান্সফর্মারকে 100 ভোল্ট সরবরাহ করে গৌণ কুণ্ডলিতে 2 অ্যাম্পিয়ার তড়িৎ প্রবাহ পাওয়া যায়। ট্রান্সফর্মারটির মুখ্য ও গৌণ কুণ্ডলির পাকসংখ্যার অনুপাত 1:20 হলে মুখ্য কুণ্ডলির মধ্য দিয়ে প্রবাহিত তড়িৎ মাত্রা হবে-",
+          options: {
+            a: "40 amp",
+            b: "80 amp",
+            c: "200 amp",
+            d: "100 amp",
+          },
+          correct: "a",
+          explanation:
+            "আমরা জানি, একটি আদর্শ ট্রান্সফরমারের ক্ষেত্রে:<br>I<sub>s</sub>/I<sub>p</sub> = N<sub>p</sub>/N<sub>s</sub><br><br>এখানে দেওয়া আছে:<br>গৌণ প্রবাহ (I<sub>s</sub>) = 2 A<br>মুখ্য ও গৌণ কুণ্ডলির পাকসংখ্যার অনুপাত (N<sub>p</sub>:N<sub>s</sub>) = 1:20<br>অর্থাৎ, N<sub>s</sub>/N<sub>p</sub> = 20/1<br><br>=> I<sub>p</sub> = I<sub>s</sub> × (N<sub>s</sub>/N<sub>p</sub>)<br>=> I<sub>p</sub> = 2 A × (20/1)<br>=> I<sub>p</sub> = 40 A<br><br>সুতরাং, মুখ্য কুণ্ডলির মধ্য দিয়ে প্রবাহিত তড়িৎ মাত্রা হবে 40 অ্যাম্পিয়ার।",
+        },
+        {
+          id: 7,
+          question:
+            "5H স্বাবেশ গুণাঙ্কের কুণ্ডলীর মধ্য দিয়ে 1A/s হারে বিদ্যুৎ প্রবাহ চলতে থাকলে কুণ্ডলীতে কত তড়িচ্চালক বল আবিষ্ট হবে?",
+          options: {
+            a: "5 V",
+            b: "10 V",
+            c: "15 V",
+            d: "20 V",
+          },
+          correct: "a",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশের ফলে আবিষ্ট তড়িচ্চালক বলের সূত্রানুযায়ী:<br>ε = -L (dI/dt)<br>যেখানে,<br>L = স্বাবেশ গুণাঙ্ক = 5 H<br>dI/dt = বিদ্যুৎ প্রবাহ পরিবর্তনের হার = 1 A/s<br><br>এখন, মান বসিয়ে পাই:<br>ε = -5 H × (1 A/s)<br>ε = -5 V<br><br>আবিষ্ট তড়িচ্চালক বলের মান হবে 5 V।",
+        },
+        {
+          id: 8,
+          question:
+            "একটি কুণ্ডলীতে 12V তড়িৎচালক বল প্রযুক্ত হলে এতে বিদ্যুৎ প্রবাহ পরিবর্তনের হার 40 A/s হয়। কুণ্ডলীর স্বাবেশ গুণাঙ্ক হবে-",
+          options: {
+            a: "0.3 H",
+            b: "3.4 H",
+            c: "30 H",
+            d: "480 H",
+          },
+          correct: "a",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশের ফলে আবিষ্ট তড়িচ্চালক বলের সূত্রানুযায়ী:<br>ε = L (dI/dt)<br>যেখানে,<br>ε = আবিষ্ট তড়িচ্চালক বল = 12 V<br>dI/dt = বিদ্যুৎ প্রবাহ পরিবর্তনের হার = 40 A/s<br><br>এখন, L এর জন্য সমাধান করে পাই:<br>L = ε / (dI/dt)<br>L = 12 V / (40 A/s)<br>L = 0.3 H<br><br>সুতরাং, কুণ্ডলীর স্বাবেশ গুণাঙ্ক হবে 0.3 H।",
+        },
+        {
+          id: 9,
+          question:
+            "কোনো কুণ্ডলীতে তড়িৎ প্রবাহ 1 mAs⁻¹ হারে পরিবর্তনের দরুন আবিষ্ট তড়িচ্চালক বল 50 μV হলে, কুণ্ডলীটির আবেশ গুণাঙ্ক-",
+          options: {
+            a: "50 H",
+            b: "5 H",
+            c: "0.5 H",
+            d: "0.05 H",
+          },
+          correct: "d",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশের সূত্রানুযায়ী:<br>ε = L (dI/dt)<br>যেখানে,<br>ε = আবিষ্ট তড়িচ্চালক বল = 50 μV = 50 × 10⁻⁶ V<br>dI/dt = তড়িৎ প্রবাহ পরিবর্তনের হার = 1 mA/s = 1 × 10⁻³ A/s<br><br>এখন, L এর জন্য সমাধান করে পাই:<br>L = ε / (dI/dt)<br>L = (50 × 10⁻⁶ V) / (1 × 10⁻³ A/s)<br>L = 50 × 10⁻³ H<br>L = 0.05 H<br><br>সুতরাং, কুণ্ডলীটির আবেশ গুণাঙ্ক হবে 0.05 H।",
+        },
+        {
+          id: 10,
+          question:
+            "কোনো কুণ্ডলীতে 0.5 As⁻¹ হারে তড়িৎ প্রবাহের পরিবর্তন করলে 2V তড়িচ্চালক শক্তি আবিষ্ট হয়। কুণ্ডলীটির স্বকীয় আবেশ গুণাঙ্ক কত?",
+          options: {
+            a: "0.25 H",
+            b: "1 H",
+            c: "4 H",
+            d: "10 H",
+          },
+          correct: "c",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশের ফলে আবিষ্ট তড়িচ্চালক বলের সূত্রানুযায়ী:<br>ε = L (dI/dt)<br>যেখানে,<br>ε = আবিষ্ট তড়িচ্চালক বল = 2 V<br>dI/dt = তড়িৎ প্রবাহ পরিবর্তনের হার = 0.5 A/s<br><br>এখন, L এর জন্য সমাধান করে পাই:<br>L = ε / (dI/dt)<br>L = 2 V / (0.5 A/s)<br>L = 4 H<br><br>সুতরাং, কুণ্ডলীটির স্বকীয় আবেশ গুণাঙ্ক হবে 4 H।",
+        },
+        {
+          id: 11,
+          question:
+            "একটি আদর্শ ট্রান্সফরমারের মুখ্য ও গৌণ কুণ্ডলীর পাকের সংখ্যা যথাক্রমে 1000 এবং 100। মুখ্য কুণ্ডলীতে 1.0 A মানের তড়িৎ প্রবাহিত হলে, গৌণ কুণ্ডলীতে কত তড়িৎ প্রবাহ পাওয়া যাবে?",
+          options: {
+            a: "1 A",
+            b: "10 A",
+            c: "12 A",
+            d: "100 A",
+          },
+          correct: "b",
+          explanation:
+            "আমরা জানি, একটি আদর্শ ট্রান্সফরমারের জন্য পাক সংখ্যা এবং প্রবাহমাত্রার সম্পর্ক হলো:<br>N<sub>p</sub>/N<sub>s</sub> = I<sub>s</sub>/I<sub>p</sub><br>যেখানে,<br>N<sub>p</sub> = 1000<br>N<sub>s</sub> = 100<br>I<sub>p</sub> = 1.0 A<br><br>এখন, I<sub>s</sub> এর জন্য সমাধান করে পাই:<br>I<sub>s</sub> = I<sub>p</sub> × (N<sub>p</sub>/N<sub>s</sub>)<br>I<sub>s</sub> = 1.0 A × (1000 / 100)<br>I<sub>s</sub> = 10 A<br><br>সুতরাং, গৌণ কুণ্ডলীতে 10 A তড়িৎ প্রবাহ পাওয়া যাবে।",
+        },
+        {
+          id: 12,
+          question:
+            "একটি ট্রান্সফরমারের মুখ্য কুণ্ডলীর পাকসংখ্যা 50 এবং ভোল্টেজ 100 V। গৌণ কুণ্ডলীর পাকসংখ্যা 200 হলে ভোল্টেজ কত?",
+          options: {
+            a: "400 V",
+            b: "4000 V",
+            c: "25 V",
+            d: "1000 V",
+          },
+          correct: "a",
+          explanation:
+            "আমরা জানি, একটি আদর্শ ট্রান্সফরমারের জন্য ভোল্টেজ এবং পাক সংখ্যার সম্পর্ক হলো:<br>V<sub>s</sub>/V<sub>p</sub> = N<sub>s</sub>/N<sub>p</sub><br>যেখানে,<br>V<sub>p</sub> = 100 V<br>N<sub>p</sub> = 50<br>N<sub>s</sub> = 200<br><br>এখন, V<sub>s</sub> এর জন্য সমাধান করে পাই:<br>V<sub>s</sub> = V<sub>p</sub> × (N<sub>s</sub>/N<sub>p</sub>)<br>V<sub>s</sub> = 100 V × (200 / 50)<br>V<sub>s</sub> = 100 V × 4<br>V<sub>s</sub> = 400 V<br><br>সুতরাং, গৌণ কুণ্ডলীতে 400 V ভোল্টেজ পাওয়া যাবে।",
+        },
+        {
+          id: 13,
+          question:
+            "5 henry স্বকীয় আবেশাঙ্কবিশিষ্ট একটি চোক (choke)-এর মধ্য দিয়ে 2 As⁻¹ হারে প্রবাহমাত্রা কমছে। কুণ্ডলীতে আবিষ্ট তড়িচ্চালক বলের মান হবে-",
+          options: {
+            a: "-10 V",
+            b: "+10 V",
+            c: "+2.5 V",
+            d: "-2.5 V",
+          },
+          correct: "b",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশের ফলে আবিষ্ট তড়িচ্চালক বলের সূত্রানুযায়ী:<br>ε = -L (dI/dt)<br>যেখানে,<br>L = 5 H<br>dI/dt = -2 A/s (যেহেতু প্রবাহমাত্রা কমছে)<br><br>এখন, মান বসিয়ে পাই:<br>ε = -5 H × (-2 A/s)<br>ε = +10 V<br><br>সুতরাং, কুণ্ডলীতে আবিষ্ট তড়িচ্চালক বলের মান হবে +10 V।",
+        },
+        {
+          id: 14,
+          question:
+            "একটি কুণ্ডলীতে 12V তড়িৎচালক বল প্রযুক্ত হলে এতে বিদ্যুৎ প্রবাহ পরিবর্তনের হার 40 A/s হয়। কুণ্ডলীর স্বাবেশ গুণাঙ্ক হবে-",
+          options: {
+            a: "0.3 H",
+            b: "3.4 H",
+            c: "30 H",
+            d: "480 H",
+          },
+          correct: "a",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশের সূত্রানুযায়ী:<br>ε = L (dI/dt)<br>যেখানে,<br>ε = 12 V<br>dI/dt = 40 A/s<br><br>L = ε / (dI/dt)<br>L = 12 V / (40 A/s)<br>L = 0.3 H<br><br>সুতরাং, কুণ্ডলীর স্বাবেশ গুণাঙ্ক হবে 0.3 H।",
+        },
+        {
+          id: 15,
+          question:
+            "একটি ট্রান্সফরমারের মুখ্য-কুণ্ডলীর মাঝে পাকসংখ্যা 50 এবং ভোল্টেজ 200 V। এর গৌণ-কুণ্ডলীর পাকসংখ্যা 100 হলে ভোল্টেজ কত?",
+          options: {
+            a: "200 V",
+            b: "300 V",
+            c: "400 V",
+            d: "500 V",
+          },
+          correct: "c",
+          explanation:
+            "আমরা জানি, একটি আদর্শ ট্রান্সফরমারের জন্য ভোল্টেজ এবং পাক সংখ্যার সম্পর্ক হলো:<br>V<sub>s</sub>/V<sub>p</sub> = N<sub>s</sub>/N<sub>p</sub><br>যেখানে,<br>V<sub>p</sub> = 200 V<br>N<sub>p</sub> = 50<br>N<sub>s</sub> = 100<br><br>V<sub>s</sub> = V<sub>p</sub> × (N<sub>s</sub>/N<sub>p</sub>)<br>V<sub>s</sub> = 200 V × (100 / 50)<br>V<sub>s</sub> = 200 V × 2<br>V<sub>s</sub> = 400 V<br><br>সুতরাং, গৌণ কুণ্ডলীতে 400 V ভোল্টেজ পাওয়া যাবে।",
+        },
+        {
+          id: 16,
+          question:
+            "কোনো মুখ্য কুণ্ডলীতে তড়িৎপ্রবাহ 0.5s-এ 10 A থেকে 5 A এ পরিবর্তিত হলে গৌণ কুণ্ডলীতে 10V তড়িচ্চালক শক্তি আবিষ্ট হয়। কুণ্ডলীটির পারস্পরিক আবেশ গুণাঙ্ক কত?",
+          options: {
+            a: "0.5 H",
+            b: "1 H",
+            c: "1.5 H",
+            d: "2 H",
+          },
+          correct: "b",
+          explanation:
+            "আমরা জানি, পারস্পরিক আবেশের ফলে আবিষ্ট তড়িচ্চালক বলের সূত্রানুযায়ী:<br>ε = -M (ΔI/Δt)<br>যেখানে,<br>ε = 10 V<br>ΔI = (5 A - 10 A) = -5 A<br>Δt = 0.5 s<br><br>M = |ε / (ΔI/Δt)|<br>M = 10 V / (|-5 A| / 0.5 s)<br>M = 10 V / (10 A/s)<br>M = 1 H<br><br>সুতরাং, কুণ্ডলীটির পারস্পরিক আবেশ গুণাঙ্ক হবে 1 H।",
+        },
+        {
+          id: 17,
+          question:
+            "একটি আদর্শ ট্রান্সফরমারের মুখ্য কুণ্ডলীর ভোল্টেজ 15V এবং প্রবাহমাত্রা 3 A। গৌণ কুণ্ডলীর ভোল্টেজ 25V হলে গৌণ কুণ্ডলীর প্রবাহমাত্রা নির্ণয় কর।",
+          options: {
+            a: "5 A",
+            b: "15 A",
+            c: "3 A",
+            d: "1.8 A",
+          },
+          correct: "d",
+          explanation:
+            "আমরা জানি, একটি আদর্শ ট্রান্সফরমারের ক্ষেত্রে ক্ষমতা সংরক্ষণ নীতি প্রযোজ্য:<br>V<sub>p</sub>I<sub>p</sub> = V<sub>s</sub>I<sub>s</sub><br>যেখানে,<br>V<sub>p</sub> = 15 V<br>I<sub>p</sub> = 3 A<br>V<sub>s</sub> = 25 V<br><br>I<sub>s</sub> = (V<sub>p</sub>I<sub>p</sub>) / V<sub>s</sub><br>I<sub>s</sub> = (15 V × 3 A) / 25 V<br>I<sub>s</sub> = 45 / 25 A<br>I<sub>s</sub> = 1.8 A<br><br>সুতরাং, গৌণ কুণ্ডলীর প্রবাহমাত্রা হবে 1.8 অ্যাম্পিয়ার।",
+        },
+        {
+          id: 18,
+          question:
+            "200 পাকবিশিষ্ট একটি কুণ্ডলীতে 4 A তড়িৎ প্রবাহ চালালে 0.02 Wb চৌম্বক ফ্লাক্স উৎপন্ন হয়। কুণ্ডলীর স্বকীয় আবেশ গুণাঙ্ক কত?",
+          options: {
+            a: "1.5 হেনরি",
+            b: "2 হেনরি",
+            c: "0.5 হেনরি",
+            d: "1 হেনরি",
+          },
+          correct: "d",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশ গুণাঙ্কের সূত্রানুযায়ী:<br>L = NΦ / I<br>যেখানে,<br>N = 200<br>Φ = 0.02 Wb (এটি প্রতি পাকের ফ্লাক্স)<br>I = 4 A<br><br>L = (200 × 0.02 Wb) / 4 A<br>L = 4 Wb / 4 A<br>L = 1 H<br><br>সুতরাং, কুণ্ডলীর স্বকীয় আবেশ গুণাঙ্ক হবে 1 হেনরি।",
+        },
+        {
+          id: 19,
+          question:
+            "400 পাকের একটি তারে 4 অ্যাম্পিয়ার তড়িৎ প্রবাহের ফলে 0.02 ওয়েবার তড়িৎ ফ্লাক্স উৎপন্ন হয়। পরিবাহীর স্বকীয় আবেশ গুণাঙ্ক কত?",
+          options: {
+            a: "0.5 henry",
+            b: "1.0 henry",
+            c: "2.0 henry",
+            d: "4.0 henry",
+          },
+          correct: "c",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশ গুণাঙ্কের সূত্রানুযায়ী:<br>L = NΦ / I<br>যেখানে,<br>N = 400<br>Φ = 0.02 Wb (এটি প্রতি পাকের ফ্লাক্স)<br>I = 4 A<br><br>L = (400 × 0.02 Wb) / 4 A<br>L = 8 Wb / 4 A<br>L = 2 H<br><br>সুতরাং, পরিবাহীর স্বকীয় আবেশ গুণাঙ্ক হবে 2.0 হেনরি।",
+        },
+        {
+          id: 20,
+          question:
+            "0.5 H স্বকীয় আবেশ গুণাঙ্কের কোনো কুণ্ডলীতে 50ms-এ তড়িৎ প্রবাহ 0.5 A থেকে 2.5A-এ বৃদ্ধি পেলে কুণ্ডলীতে আবিষ্ট তড়িচ্চালক শক্তি কত?",
+          options: {
+            a: "10 V",
+            b: "15 V",
+            c: "20 V",
+            d: "40 V",
+          },
+          correct: "c",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশের ফলে আবিষ্ট তড়িচ্চালক বলের সূত্রানুযায়ী:<br>ε = -L (ΔI/Δt)<br>যেখানে,<br>L = 0.5 H<br>ΔI = (2.5 A - 0.5 A) = 2.0 A<br>Δt = 50 ms = 0.05 s<br><br>ε = -0.5 H × (2.0 A / 0.05 s)<br>ε = -0.5 × 40 V<br>ε = -20 V<br><br>আবিষ্ট তড়িচ্চালক শক্তির মান হবে 20 V।",
+        },
+        {
+          id: 21,
+          question:
+            "একটি আদর্শ 18 step down ট্রান্সফরমারের মুখ্য-কুণ্ডলীর ক্ষমতা 10 kW এবং গৌণ-কুণ্ডলীতে 25 A বিদ্যুৎ প্রবাহিত হচ্ছে। মুখ্য-কুণ্ডলীর ভোল্টেজ কত?",
+          options: {
+            a: "2500 V",
+            b: "3200 V",
+            c: "31250 V",
+            d: "400 V",
+          },
+          correct: "b",
+          explanation: "-",
+        },
+        {
+          id: 22,
+          question:
+            "একটি ট্রান্সফরমারের মুখ্য-কুণ্ডলীর ভোল্টেজ 10 V এবং তড়িৎ প্রবাহ 4 A। গৌণ-কুণ্ডলীতে ভোল্টেজ 20 V হলে এতে কত ampere তড়িৎপ্রবাহ হবে?",
+          options: {
+            a: "0.2",
+            b: "1.2",
+            c: "2.0",
+            d: "2.2",
+          },
+          correct: "c",
+          explanation:
+            "আমরা জানি, একটি আদর্শ ট্রান্সফরমারের ক্ষেত্রে ক্ষমতা সংরক্ষণ নীতি প্রযোজ্য:<br>V<sub>p</sub>I<sub>p</sub> = V<sub>s</sub>I<sub>s</sub><br>যেখানে,<br>V<sub>p</sub> = 10 V<br>I<sub>p</sub> = 4 A<br>V<sub>s</sub> = 20 V<br><br>I<sub>s</sub> = (V<sub>p</sub>I<sub>p</sub>) / V<sub>s</sub><br>I<sub>s</sub> = (10 V × 4 A) / 20 V<br>I<sub>s</sub> = 2 A<br><br>সুতরাং, গৌণ কুণ্ডলীতে 2.0 অ্যাম্পিয়ার তড়িৎপ্রবাহ হবে।",
+        },
+        {
+          id: 23,
+          question:
+            "5 H স্বকীয় আবেশ গুণাঙ্কের কোনো কুণ্ডলীতে 10V তড়িচ্চালক বল আবিষ্ট হলে তড়িৎপ্রবাহের হার-",
+          options: {
+            a: "50 As⁻¹",
+            b: "2 As⁻¹",
+            c: "25 As⁻¹",
+            d: "0.5 As⁻¹",
+          },
+          correct: "b",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশের ফলে আবিষ্ট তড়িচ্চালক বলের সূত্রানুযায়ী:<br>ε = L (dI/dt)<br>যেখানে,<br>ε = 10 V<br>L = 5 H<br><br>dI/dt = ε / L<br>dI/dt = 10 V / 5 H<br>dI/dt = 2 A/s<br><br>সুতরাং, তড়িৎপ্রবাহের হার হবে 2 As⁻¹।",
+        },
+        {
+          id: 24,
+          question:
+            "1 As⁻¹ হারে তড়িৎপ্রবাহ মাত্রার পরিবর্তনের ফলে কোনো কুণ্ডলীতে 250 mV আবিষ্ট হলে কুণ্ডলীর স্বকীয় আবেশ গুণাঙ্ক হবে-",
+          options: {
+            a: "2500 mH",
+            b: "250 mH",
+            c: "150 mH",
+            d: "50 mH",
+          },
+          correct: "b",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশের সূত্রানুযায়ী:<br>ε = L (dI/dt)<br>যেখানে,<br>ε = 250 mV = 250 × 10⁻³ V<br>dI/dt = 1 A/s<br><br>L = ε / (dI/dt)<br>L = (250 × 10⁻³ V) / (1 A/s)<br>L = 250 × 10⁻³ H<br>L = 250 mH<br><br>সুতরাং, কুণ্ডলীর স্বকীয় আবেশ গুণাঙ্ক হবে 250 mH।",
+        },
+        {
+          id: 25,
+          question:
+            "একটি কুণ্ডলীতে এক সেকেন্ডে তড়িৎপ্রবাহ মাত্রার পরিবর্তন 6 A থেকে 11 A হলে 20V তড়িচ্চালক বল আবিষ্ট হয়। আবেশ গুণাঙ্কের মান-",
+          options: {
+            a: "4 mH",
+            b: "8 mH",
+            c: "4 H",
+            d: "5 H",
+          },
+          correct: "c",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশের সূত্রানুযায়ী:<br>ε = L (ΔI/Δt)<br>যেখানে,<br>ε = 20 V<br>ΔI = (11 A - 6 A) = 5 A<br>Δt = 1 s<br><br>L = ε / (ΔI/Δt)<br>L = 20 V / (5 A / 1 s)<br>L = 4 H<br><br>সুতরাং, আবেশ গুণাঙ্কের মান হবে 4 H।",
+        },
+        {
+          id: 26,
+          question:
+            "100 পাকবিশিষ্ট একটি কুণ্ডলীতে 4A তড়িৎ প্রবাহ চালালে 0.02 Wb চৌম্বক ফ্লাক্স তৈরি হয়। কুণ্ডলীর স্বকীয় আবেশ গুণাঙ্ক কত?",
+          options: {
+            a: "0.5 Henry",
+            b: "1.0 Henry",
+            c: "5.0 Henry",
+            d: "50 Henry",
+          },
+          correct: "a",
+          explanation:
+            "আমরা জানি, স্বকীয় আবেশ গুণাঙ্কের সূত্রানুযায়ী:<br>L = NΦ / I<br>যেখানে,<br>N = 100<br>Φ = 0.02 Wb (এটি প্রতি পাকের ফ্লাক্স)<br>I = 4 A<br><br>L = (100 × 0.02 Wb) / 4 A<br>L = 2 Wb / 4 A<br>L = 0.5 H<br><br>সুতরাং, কুণ্ডলীর স্বকীয় আবেশ গুণাঙ্ক হবে 0.5 হেনরি।",
+        },
+        {
+          id: 27,
+          question: "220V সরবরাহ লাইনের শীর্ষমান কত?",
+          options: {
+            a: "311 V",
+            b: "220 V",
+            c: "140 V",
+            d: "110 V",
+          },
+          correct: "a",
+          explanation:
+            "বাসাবাড়িতে সরবরাহকৃত 220V ভোল্টেজ হলো দিক পরিবর্তী ভোল্টেজ (AC voltage) এর কার্যকর মান বা RMS মান (V<sub>rms</sub>)।<br>আমরা জানি, শীর্ষ মান (V₀) এর সাথে সম্পর্ক হলো:<br>V₀ = V<sub>rms</sub> × √2<br><br>V₀ = 220 V × 1.414<br>V₀ ≈ 311 V<br><br>সুতরাং, সরবরাহ লাইনের শীর্ষমান প্রায় 311 V।",
+        },
+        {
+          id: 28,
+          question:
+            "একটি দিক পরিবর্তী তড়িৎ প্রবাহের সমীকরণ, I = 14 sin 314t হলে তড়িৎ প্রবাহের কম্পাঙ্ক কত?",
+          options: {
+            a: "14 Hz",
+            b: "50 Hz",
+            c: "100 Hz",
+            d: "314 Hz",
+          },
+          correct: "b",
+          explanation:
+            "একটি দিক পরিবর্তী তড়িৎ প্রবাহের সাধারণ সমীকরণ হলো: I = I₀ sin (ωt)<br>এখানে, ω = কৌণিক কম্পাঙ্ক (ω = 2πf)<br><br>প্রদত্ত সমীকরণ থেকে ω = 314 rad/s<br><br>f = ω / (2π)<br>f = 314 / (2 × 3.1416)<br>f ≈ 50 Hz<br><br>সুতরাং, তড়িৎ প্রবাহের কম্পাঙ্ক হবে 50 Hz।",
+        },
+        {
+          id: 29,
+          question:
+            "দিক পরিবর্তী প্রবাহের অর্ধ চক্রের জন্য প্রবাহের গড় মান 1.6 A হলে প্রবাহের শীর্ষ মান কত?",
+          options: {
+            a: "1.6 A",
+            b: "2.512 A",
+            c: "1.3 A",
+            d: "π A",
+          },
+          correct: "b",
+          explanation:
+            "আমরা জানি, দিক পরিবর্তী প্রবাহের অর্ধ চক্রের জন্য গড় মান (I<sub>avg</sub>) এবং শীর্ষ মান (I₀) এর মধ্যে সম্পর্ক হলো:<br>I<sub>avg</sub> = (2/π) I₀<br><br>I₀ = I<sub>avg</sub> × (π/2)<br>I₀ = 1.6 A × (π / 2)<br>I₀ ≈ 1.6 A × 1.57<br>I₀ ≈ 2.512 A<br><br>সুতরাং, প্রবাহের শীর্ষ মান হবে প্রায় 2.512 A।",
+        },
+        {
+          id: 30,
+          question:
+            "একটি দিক পরিবর্তী প্রবাহমাত্রার কম্পাঙ্ক 25 Hz। শীর্ষ মানে পৌঁছাতে এর কত সময় লাগবে?",
+          options: {
+            a: "0.04 sec",
+            b: "0.03 sec",
+            c: "0.02 sec",
+            d: "0.01 sec",
+          },
+          correct: "d",
+          explanation:
+            "আমরা জানি, পর্যায়কাল (T) = 1 / f<br>T = 1 / 25 s = 0.04 s<br><br>একটি দিক পরিবর্তী প্রবাহ শূন্য থেকে শুরু হয়ে শীর্ষ মানে পৌঁছাতে পর্যায়কালের এক-চতুর্থাংশ (T/4) সময় নেয়।<br>সময় = 0.04 s / 4 = 0.01 s<br><br>সুতরাং, শীর্ষ মানে পৌঁছাতে 0.01 সেকেন্ড সময় লাগবে।",
+        },
+        {
+          id: 31,
+          question:
+            "একটি পরিবর্তী প্রবাহকে I = 100 sin 629t Amp দ্বারা প্রকাশ করা হলে, তড়িৎ প্রবাহের কম্পাঙ্ক নির্ণয় কর।",
+          options: {
+            a: "100.11 Hz",
+            b: "110.22 Hz",
+            c: "110.10 Hz",
+            d: "122.10 Hz",
+          },
+          correct: "a",
+          explanation:
+            "সাধারণ সমীকরণ: I = I₀ sin (ωt)<br>প্রদত্ত সমীকরণ: I = 100 sin 629t Amp<br>এখান থেকে ω = 629 rad/s<br><br>f = ω / (2π)<br>f = 629 / (2 × 3.1416)<br>f ≈ 100.11 Hz<br><br>সুতরাং, তড়িৎ প্রবাহের কম্পাঙ্ক হবে প্রায় 100.11 Hz।",
+        },
+        {
+          id: 32,
+          question:
+            "যদি তড়িৎ প্রবাহের সমীকরণ I(t) = 20 sin (628t) হয়, তাহলে তড়িৎ এর কম্পাঙ্ক ও rms মান কত?",
+          options: {
+            a: "100 Hz এবং 14.14 A",
+            b: "200 Hz এবং 15 A",
+            c: "100 Hz এবং 20 A",
+            d: "50 Hz এবং 14.14 A",
+          },
+          correct: "a",
+          explanation:
+            "প্রদত্ত সমীকরণ: I(t) = 20 sin (628t)<br><br><b>১. কম্পাঙ্ক (f) নির্ণয়:</b><br>ω = 628 rad/s<br>f = ω / (2π) = 628 / (2 × 3.14) ≈ 100 Hz<br><br><b>২. RMS মান (I<sub>rms</sub>) নির্ণয়:</b><br>শীর্ষ মান (I₀) = 20 A<br>I<sub>rms</sub> = I₀ / √2 = 20 A / 1.414 ≈ 14.14 A<br><br>সুতরাং, তড়িৎ এর কম্পাঙ্ক প্রায় 100 Hz এবং RMS মান প্রায় 14.14 A।",
+        },
+        {
+          id: 33,
+          question:
+            "একটি দিক পরিবর্তী প্রবাহকে I = 50 sin 400πt সমীকরণ দ্বারা প্রকাশ করা হয়। প্রবাহটির মূল গড় বর্গমান এবং অর্ধচক্রের গড় মানের অনুপাত কত হবে?",
+          options: {
+            a: "0.55",
+            b: "0.90",
+            c: "1.11",
+            d: "1.34",
+          },
+          correct: "c",
+          explanation:
+            "প্রদত্ত সমীকরণ থেকে শীর্ষ মান (I₀) = 50 A<br><br><b>১. মূল গড় বর্গমান (I<sub>rms</sub>):</b> I<sub>rms</sub> = I₀ / √2<br><b>২. অর্ধচক্রের গড় মান (I<sub>avg</sub>):</b> I<sub>avg</sub> = (2/π) I₀<br><br><b>৩. অনুপাত:</b><br>অনুপাত = I<sub>rms</sub> / I<sub>avg</sub> = (I₀/√2) / ((2/π)I₀) = π / (2√2) ≈ 1.11<br><br>সুতরাং, অনুপাত প্রায় 1.11।",
+        },
+        {
+          id: 34,
+          question:
+            "পরিবর্তী প্রবাহ, i = 200 sin 100πt দ্বারা প্রকাশ করা হলে পর্যায়কাল কত?",
+          options: {
+            a: "0.05 s",
+            b: "0.02 s",
+            c: "0.01 s",
+            d: "0.1 s",
+          },
+          correct: "b",
+          explanation:
+            "প্রদত্ত সমীকরণ: i = 200 sin 100πt<br>এখান থেকে ω = 100π rad/s<br><br>আমরা জানি, T = 2π / ω<br>T = 2π / (100π)<br>T = 2 / 100 = 0.02 s<br><br>সুতরাং, পরিবর্তী প্রবাহের পর্যায়কাল হবে 0.02 s।",
+        },
+        {
+          id: 35,
+          question:
+            "কাসেম পদার্থবিজ্ঞান বিভাগের 100Ω রোধের একটি বৈদ্যুতিক হিটার 160 V বিস্তার এবং প্রায় 60 Hz কম্পাঙ্কের একটি এসি উৎসের সাথে সংযুক্ত করে। এসি উৎসের গড় ভোল্টেজের মান নির্ণয় কর।",
+          options: {
+            a: "320 V",
+            b: "220.5 V",
+            c: "80 V",
+            d: "101.92 V",
+          },
+          correct: "d",
+          explanation:
+            "দেওয়া আছে:<br>বিস্তার (সর্বোচ্চ ভোল্টেজ, V₀) = 160 V<br><br>এসি উৎসের অর্ধচক্রের গড় ভোল্টেজের মান (V<sub>avg</sub>) এর সূত্র হলো:<br>V<sub>avg</sub> = (2/π) V₀<br><br>V<sub>avg</sub> = (2/π) × 160 V<br>V<sub>avg</sub> ≈ 101.86 V<br><br>সুতরাং, এসি উৎসের গড় ভোল্টেজের মান প্রায় 101.92 V।",
+        },
+        {
+          id: 36,
+          question:
+            "কোনো দিক পরিবর্তী তড়িচ্চালক শক্তির গড়বর্গের বর্গমূল মান 10 V। তড়িচ্চালক শক্তির শীর্ষমান হলো-",
+          options: {
+            a: "10.00 V",
+            b: "14.14 V",
+            c: "5.00 V",
+            d: "1.41 V",
+          },
+          correct: "b",
+          explanation:
+            "আমরা জানি, E<sub>rms</sub> = E₀ / √2<br>বা, E₀ = E<sub>rms</sub> × √2<br><br>E<sub>rms</sub> = 10 V<br><br>E₀ = 10 V × 1.414<br>E₀ = 14.14 V<br><br>সুতরাং, তড়িচ্চালক শক্তির শীর্ষমান হলো 14.14 V।",
+        },
+        {
+          id: 37,
+          question:
+            "একটি দিক পরিবর্তী উৎসের তড়িচ্চালক বলের শীর্ষমান 100 V। কার্যকর তড়িচ্চালক বল হবে-",
+          options: {
+            a: "70.7 V",
+            b: "141.44 V",
+            c: "200 V",
+            d: "220 V",
+          },
+          correct: "a",
+          explanation:
+            "আমরা জানি, কার্যকর তড়িচ্চালক বল (E<sub>rms</sub>) এবং শীর্ষমান (E₀) এর মধ্যে সম্পর্ক হলো:<br>E<sub>rms</sub> = E₀ / √2<br><br>E₀ = 100 V<br><br>E<sub>rms</sub> = 100 V / 1.414<br>E<sub>rms</sub> ≈ 70.7 V<br><br>সুতরাং, কার্যকর তড়িচ্চালক বল হবে প্রায় 70.7 V।",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                <label class="option" data-option="${option}">
+                                <div class="circle">${option}</div>
+                                <span class="option-text">${question.options[option]}</span>
+                                </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                                         <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                                         <div class="explanation-content">
+                                                                                           <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                                           ${question.explanation}
+                                                                                         </div>
+                                                                                       </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                                    <p class="question-label">${
+                                                                                      index +
+                                                                                      1
+                                                                                    }. ${
+            question.question
+          }</p>
+                                                                                    <div class="options">
+                                                                                      ${optionsHTML}
+                                                                                    </div>
+                                                                                    ${explanationHTML}
+                                                                                  `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
